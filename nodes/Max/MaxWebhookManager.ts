@@ -1,6 +1,5 @@
 import type { IHookFunctions } from 'n8n-workflow';
 import type { MaxSubscriptionsResponse, MaxTriggerEvent } from './MaxTriggerConfig';
-import { isPlatformApi } from './GenericFunctions';
 
 /**
  * Max webhook manager
@@ -9,7 +8,7 @@ import { isPlatformApi } from './GenericFunctions';
  * Provides methods to check, create, and delete webhook subscriptions.
  */
 export class MaxWebhookManager {
-	private readonly DEFAULT_BASE_URL = 'https://botapi.max.ru';
+	private readonly DEFAULT_BASE_URL = 'https://platform-api.max.ru';
 
 	/**
 	 * Check if webhook subscription already exists
@@ -157,8 +156,7 @@ export class MaxWebhookManager {
 	}
 
 	/**
-	 * Get existing subscriptions from Max API
-	 * platform-api.max.ru uses Authorization header; legacy botapi uses access_token in qs
+	 * Get existing subscriptions from Max API (Authorization header)
 	 */
 	public async getSubscriptions(
 		context: IHookFunctions,
@@ -166,21 +164,17 @@ export class MaxWebhookManager {
 	): Promise<MaxSubscriptionsResponse> {
 		const credentials = await context.getCredentials('maxApi');
 		const token = credentials['accessToken'] as string;
-		const useHeader = isPlatformApi(baseUrl);
 
 		return context.helpers.httpRequest({
 			method: 'GET',
 			url: `${baseUrl}/subscriptions`,
-			...(useHeader
-				? { headers: { Authorization: `Bearer ${token}` } }
-				: { qs: { access_token: token } }),
+			headers: { Authorization: `Bearer ${token}` },
 			json: true,
 		});
 	}
 
 	/**
-	 * Create a new webhook subscription
-	 * platform-api.max.ru uses Authorization header; legacy botapi uses access_token in qs
+	 * Create a new webhook subscription (Authorization header)
 	 */
 	public async createSubscription(
 		context: IHookFunctions,
@@ -194,22 +188,18 @@ export class MaxWebhookManager {
 			update_types: events,
 		};
 		const token = credentials['accessToken'] as string;
-		const useHeader = isPlatformApi(baseUrl);
 
 		await context.helpers.httpRequest({
 			method: 'POST',
 			url: `${baseUrl}/subscriptions`,
-			...(useHeader
-				? { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-				: { qs: { access_token: token }, headers: { 'Content-Type': 'application/json' } }),
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
 			body: JSON.stringify(body),
 			json: true,
 		});
 	}
 
 	/**
-	 * Delete a webhook subscription
-	 * platform-api.max.ru uses Authorization header; legacy botapi uses access_token in qs
+	 * Delete a webhook subscription (Authorization header)
 	 */
 	public async deleteSubscription(
 		context: IHookFunctions,
@@ -218,14 +208,12 @@ export class MaxWebhookManager {
 		credentials: any
 	): Promise<void> {
 		const token = credentials['accessToken'] as string;
-		const useHeader = isPlatformApi(baseUrl);
 
 		await context.helpers.httpRequest({
 			method: 'DELETE',
 			url: `${baseUrl}/subscriptions`,
-			...(useHeader
-				? { headers: { Authorization: `Bearer ${token}` }, qs: { url: webhookUrl } }
-				: { qs: { access_token: token, url: webhookUrl } }),
+			headers: { Authorization: `Bearer ${token}` },
+			qs: { url: webhookUrl },
 			json: true,
 		});
 	}

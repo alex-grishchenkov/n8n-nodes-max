@@ -11,14 +11,6 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 /**
- * Detect platform-api.max.ru (new MAX API) vs botapi.max.ru (legacy).
- * platform-api uses Authorization header and some different paths.
- */
-export function isPlatformApi(baseUrl: string): boolean {
-	return !!(baseUrl && String(baseUrl).includes('platform-api.max.ru'));
-}
-
-/**
  * Max API Error Categories
  *
  * Categorizes different types of errors that can occur when interacting with the Max API
@@ -195,7 +187,7 @@ export async function editMessage(
 	try {
 		// Get credentials for API calls
 		const credentials = await this.getCredentials('maxApi');
-		const baseUrl = credentials['baseUrl'] || 'https://botapi.max.ru';
+		const baseUrl = credentials['baseUrl'] || 'https://platform-api.max.ru';
 
 		// Build request body
 		const requestBody: IDataObject = {
@@ -248,7 +240,7 @@ export async function deleteMessage(
 	try {
 		// Get credentials for API calls
 		const credentials = await this.getCredentials('maxApi');
-		const baseUrl = credentials['baseUrl'] || 'https://botapi.max.ru';
+		const baseUrl = credentials['baseUrl'] || 'https://platform-api.max.ru';
 
 		// Make HTTP request to delete message endpoint
 		const result = await this.helpers.httpRequest({
@@ -310,7 +302,7 @@ export async function answerCallbackQuery(
 	try {
 		// Get credentials for API calls
 		const credentials = await this.getCredentials('maxApi');
-		const baseUrl = credentials['baseUrl'] || 'https://botapi.max.ru';
+		const baseUrl = credentials['baseUrl'] || 'https://platform-api.max.ru';
 
 		// Build request body
 		const requestBody: IDataObject = {
@@ -330,13 +322,9 @@ export async function answerCallbackQuery(
 			requestBody['cache_time'] = cacheTime;
 		}
 
-		// platform-api: POST /answers; legacy botapi: POST /callbacks/answers
-		const callbackUrl = isPlatformApi(String(baseUrl || ''))
-			? `${baseUrl}/answers`
-			: `${baseUrl}/callbacks/answers`;
 		const result = await this.helpers.httpRequest({
 			method: 'POST',
-			url: callbackUrl,
+			url: `${baseUrl}/answers`,
 			headers: {
 				'Authorization': `Bearer ${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
@@ -915,7 +903,7 @@ export async function uploadFileToMax(
 	try {
 		// Get credentials for API calls
 		const credentials = await this.getCredentials('maxApi');
-		const baseUrl = credentials['baseUrl'] || 'https://botapi.max.ru';
+		const baseUrl = credentials['baseUrl'] || 'https://platform-api.max.ru';
 
 		// Step 1: Get upload URL from Max API
 		const uploadUrlResponse = await this.helpers.httpRequest({
@@ -1234,7 +1222,7 @@ export async function getChatInfo(
 	try {
 		// Get credentials for API calls
 		const credentials = await this.getCredentials('maxApi');
-		const baseUrl = credentials['baseUrl'] || 'https://botapi.max.ru';
+		const baseUrl = credentials['baseUrl'] || 'https://platform-api.max.ru';
 
 		// Make HTTP request to get chat info endpoint
 		const result = await this.helpers.httpRequest({
@@ -1279,15 +1267,11 @@ export async function leaveChat(
 	try {
 		// Get credentials for API calls
 		const credentials = await this.getCredentials('maxApi');
-		const baseUrl = credentials['baseUrl'] || 'https://botapi.max.ru';
+		const baseUrl = credentials['baseUrl'] || 'https://platform-api.max.ru';
 
-		// platform-api: DELETE /chats/{chatId}/members/me; legacy: POST /chats/{chatId}/leave
-		const isPlatform = isPlatformApi(String(baseUrl || ''));
 		const result = await this.helpers.httpRequest({
-			method: isPlatform ? 'DELETE' : 'POST',
-			url: isPlatform
-				? `${baseUrl}/chats/${chatId}/members/me`
-				: `${baseUrl}/chats/${chatId}/leave`,
+			method: 'DELETE',
+			url: `${baseUrl}/chats/${chatId}/members/me`,
 			headers: {
 				'Authorization': `Bearer ${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
