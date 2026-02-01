@@ -47,7 +47,9 @@ export class MaxApi implements ICredentialType {
     /**
      * Credential test configuration to validate the provided credentials
      * Makes a request to the Max API /me endpoint to verify token validity.
-     * platform-api.max.ru requires Authorization header (query param not supported).
+     * platform-api.max.ru: use Authorization header only (query not supported).
+     * botapi.max.ru (legacy): use access_token in query.
+     * Send both so either API accepts (platform uses header, botapi uses qs).
      */
     test: ICredentialTestRequest = {
         request: {
@@ -55,6 +57,9 @@ export class MaxApi implements ICredentialType {
             url: '/me',
             headers: {
                 Authorization: '=Bearer {{$credentials.accessToken}}',
+            },
+            qs: {
+                access_token: '={{$credentials.accessToken}}',
             },
         },
     };
