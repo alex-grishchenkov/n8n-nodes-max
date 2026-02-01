@@ -1,5 +1,20 @@
+import { URL, domainToASCII } from 'node:url';
 import type { IHookFunctions } from 'n8n-workflow';
 import type { MaxSubscriptionsResponse, MaxTriggerEvent } from './MaxTriggerConfig';
+
+/**
+ * Convert URL hostname to Punycode so external services (e.g. MAX) can reach it over TLS
+ * when the certificate is issued for the ASCII hostname only.
+ */
+function toPunycodeUrl(urlString: string): string {
+	try {
+		const u = new URL(urlString);
+		u.hostname = domainToASCII(u.hostname);
+		return u.toString();
+	} catch {
+		return urlString;
+	}
+}
 
 /**
  * Max webhook manager
@@ -141,11 +156,13 @@ export class MaxWebhookManager {
 	/**
 	 * Get webhook configuration from node context.
 	 * Use URL as returned by n8n: webhook-test when testing, webhook when workflow is active.
+	 * Converts hostname to Punycode so MAX can reach the URL over TLS (cert often only has ASCII host).
 	 */
 	public async getWebhookConfig(context: IHookFunctions) {
 		const credentials = await context.getCredentials('maxApi');
 		const baseUrl = (credentials['baseUrl'] as string) || this.DEFAULT_BASE_URL;
-		const webhookUrl = context.getNodeWebhookUrl('default') as string;
+		const rawUrl = context.getNodeWebhookUrl('default') as string;
+		const webhookUrl = toPunycodeUrl(rawUrl);
 		const events = context.getNodeParameter('events') as MaxTriggerEvent[];
 
 		return {
