@@ -1,9 +1,10 @@
 import type { IHookFunctions } from 'n8n-workflow';
 import type { MaxSubscriptionsResponse, MaxTriggerEvent } from './MaxTriggerConfig';
+import { isPlatformApi } from './GenericFunctions';
 
 /**
  * Max webhook manager
- * 
+ *
  * Handles webhook subscription lifecycle with the Max API.
  * Provides methods to check, create, and delete webhook subscriptions.
  */
@@ -12,16 +13,16 @@ export class MaxWebhookManager {
 
 	/**
 	 * Check if webhook subscription already exists
-	 * 
+	 *
 	 * Queries the Max API to determine if a webhook subscription
 	 * for this node's webhook URL is already registered.
-	 * 
+	 *
 	 * @param this - Hook function context providing access to credentials and helpers
 	 * @returns Promise resolving to true if webhook exists, false otherwise
 	 */
 	async checkExists(this: IHookFunctions): Promise<boolean> {
 		const manager = new MaxWebhookManager();
-		
+
 		try {
 			const { baseUrl, webhookUrl } = await manager.getWebhookConfig(this);
 
@@ -33,12 +34,12 @@ export class MaxWebhookManager {
 				const existingSubscription = response.subscriptions.find(
 					(sub: any) => sub.url === webhookUrl
 				);
-				
+
 				if (existingSubscription) {
 					console.log('Max Trigger - checkExists: Found existing webhook, returning true');
 					return true;
 				}
-				
+
 				console.log(
 					`Max Trigger - checkExists: No matching webhook found among ${response.subscriptions.length} subscriptions`
 				);
@@ -53,17 +54,17 @@ export class MaxWebhookManager {
 
 	/**
 	 * Create webhook subscription with Max API
-	 * 
+	 *
 	 * Creates a webhook subscription only if one doesn't already exist.
 	 * This prevents the constant recreation cycle that was causing issues.
-	 * 
+	 *
 	 * @param this - Hook function context providing access to credentials and parameters
 	 * @returns Promise resolving to true if webhook creation succeeds
 	 * @throws {Error} When webhook creation fails or API request is rejected
 	 */
 	async create(this: IHookFunctions): Promise<boolean> {
 		const manager = new MaxWebhookManager();
-		
+
 		try {
 			const { baseUrl, webhookUrl, events, credentials } = await manager.getWebhookConfig(this);
 
@@ -76,7 +77,7 @@ export class MaxWebhookManager {
 				const existingSubscription = existingResponse.subscriptions.find(
 					(sub: any) => sub.url === webhookUrl
 				);
-				
+
 				if (existingSubscription) {
 					console.log('Max Trigger - create: Webhook already exists, skipping creation');
 					return true;
@@ -100,15 +101,15 @@ export class MaxWebhookManager {
 
 	/**
 	 * Delete webhook subscription from Max API
-	 * 
+	 *
 	 * Called when workflow is deactivated. Cleans up webhook subscriptions.
-	 * 
+	 *
 	 * @param this - Hook function context providing access to credentials and helpers
 	 * @returns Promise resolving to true if deletion succeeds
 	 */
 	async delete(this: IHookFunctions): Promise<boolean> {
 		const manager = new MaxWebhookManager();
-		
+
 		try {
 			const { baseUrl, webhookUrl, credentials } = await manager.getWebhookConfig(this);
 
@@ -122,7 +123,7 @@ export class MaxWebhookManager {
 				const targetSubscription = existingResponse.subscriptions.find(
 					(sub: any) => sub.url === webhookUrl
 				);
-				
+
 				if (targetSubscription) {
 					await manager.deleteSubscription(this, baseUrl, targetSubscription.url, credentials);
 					console.log('Max Trigger - delete: Webhook subscription deleted successfully');
@@ -157,25 +158,29 @@ export class MaxWebhookManager {
 
 	/**
 	 * Get existing subscriptions from Max API
+	 * platform-api.max.ru uses Authorization header; legacy botapi uses access_token in qs
 	 */
 	public async getSubscriptions(
 		context: IHookFunctions,
 		baseUrl: string
 	): Promise<MaxSubscriptionsResponse> {
 		const credentials = await context.getCredentials('maxApi');
-		
+		const token = credentials['accessToken'] as string;
+		const useHeader = isPlatformApi(baseUrl);
+
 		return context.helpers.httpRequest({
 			method: 'GET',
 			url: `${baseUrl}/subscriptions`,
-			qs: {
-				access_token: credentials['accessToken'],
-			},
+			...(useHeader
+				? { headers: { Authorization: `Bearer ${token}` } }
+				: { qs: { access_token: token } }),
 			json: true,
 		});
 	}
 
 	/**
 	 * Create a new webhook subscription
+	 * platform-api.max.ru uses Authorization header; legacy botapi uses access_token in qs
 	 */
 	public async createSubscription(
 		context: IHookFunctions,
@@ -188,16 +193,15 @@ export class MaxWebhookManager {
 			url: webhookUrl,
 			update_types: events,
 		};
+		const token = credentials['accessToken'] as string;
+		const useHeader = isPlatformApi(baseUrl);
 
 		await context.helpers.httpRequest({
 			method: 'POST',
 			url: `${baseUrl}/subscriptions`,
-			qs: {
-				access_token: credentials['accessToken'],
-			},
-			headers: {
-				'Content-Type': 'application/json',
-			},
+			...(useHeader
+				? { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+				: { qs: { access_token: token }, headers: { 'Content-Type': 'application/json' } }),
 			body: JSON.stringify(body),
 			json: true,
 		});
@@ -205,6 +209,7 @@ export class MaxWebhookManager {
 
 	/**
 	 * Delete a webhook subscription
+	 * platform-api.max.ru uses Authorization header; legacy botapi uses access_token in qs
 	 */
 	public async deleteSubscription(
 		context: IHookFunctions,
@@ -212,13 +217,15 @@ export class MaxWebhookManager {
 		webhookUrl: string,
 		credentials: any
 	): Promise<void> {
+		const token = credentials['accessToken'] as string;
+		const useHeader = isPlatformApi(baseUrl);
+
 		await context.helpers.httpRequest({
 			method: 'DELETE',
 			url: `${baseUrl}/subscriptions`,
-			qs: {
-				access_token: credentials['accessToken'],
-				url: webhookUrl,
-			},
+			...(useHeader
+				? { headers: { Authorization: `Bearer ${token}` }, qs: { url: webhookUrl } }
+				: { qs: { access_token: token, url: webhookUrl } }),
 			json: true,
 		});
 	}

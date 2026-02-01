@@ -11,8 +11,16 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 /**
+ * Detect platform-api.max.ru (new MAX API) vs botapi.max.ru (legacy).
+ * platform-api uses Authorization header and some different paths.
+ */
+export function isPlatformApi(baseUrl: string): boolean {
+	return !!(baseUrl && String(baseUrl).includes('platform-api.max.ru'));
+}
+
+/**
  * Max API Error Categories
- * 
+ *
  * Categorizes different types of errors that can occur when interacting with the Max API
  * to provide appropriate error handling and user guidance.
  */
@@ -27,7 +35,7 @@ export enum MaxErrorCategory {
 
 /**
  * Max API Error Interface
- * 
+ *
  * Represents the structure of errors returned by the Max API,
  * including error codes, descriptions, and additional parameters.
  */
@@ -45,10 +53,10 @@ export interface IMaxError {
 
 /**
  * Create a Max Bot API instance with credentials
- * 
+ *
  * Creates and configures a Max Bot API instance using the provided credentials.
  * Supports custom base URL configuration for different Max API environments.
- * 
+ *
  * @param this - The execution context providing access to credentials
  * @returns Promise resolving to a configured Bot instance
  * @throws {NodeApiError} When access token is missing or invalid
@@ -76,10 +84,10 @@ export async function createMaxBotInstance(
 
 /**
  * Send message using Max Bot API with enhanced error handling
- * 
+ *
  * Sends a text message to a user or chat using the Max Bot API.
  * Supports text formatting, attachments, and inline keyboards.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param recipientType - Type of recipient ('user' or 'chat')
@@ -119,10 +127,10 @@ export async function sendMessage(
 
 /**
  * Edit message using Max Bot API with enhanced error handling
- * 
+ *
  * Modifies the text content of an existing message in Max messenger.
  * Supports text formatting and inline keyboard updates.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param messageId - Unique identifier of the message to edit
@@ -216,10 +224,10 @@ export async function editMessage(
 
 /**
  * Delete message using Max Bot API with enhanced error handling
- * 
+ *
  * Permanently removes a message from Max messenger chat.
  * Only messages sent by the bot can be deleted.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param messageId - Unique identifier of the message to delete
@@ -262,10 +270,10 @@ export async function deleteMessage(
 
 /**
  * Answer callback query using Max Bot API with enhanced error handling
- * 
+ *
  * Responds to a callback query from an inline keyboard button press.
  * Can show a notification or alert dialog to the user.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param callbackQueryId - Unique identifier of the callback query to answer
@@ -322,10 +330,13 @@ export async function answerCallbackQuery(
 			requestBody['cache_time'] = cacheTime;
 		}
 
-		// Make HTTP request to answer callback query endpoint
+		// platform-api: POST /answers; legacy botapi: POST /callbacks/answers
+		const callbackUrl = isPlatformApi(String(baseUrl || ''))
+			? `${baseUrl}/answers`
+			: `${baseUrl}/callbacks/answers`;
 		const result = await this.helpers.httpRequest({
 			method: 'POST',
-			url: `${baseUrl}/callbacks/answers`,
+			url: callbackUrl,
 			headers: {
 				'Authorization': `Bearer ${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
@@ -349,10 +360,10 @@ export async function answerCallbackQuery(
 
 /**
  * Validate and format text content for Max messenger
- * 
+ *
  * Validates message text against Max messenger constraints and format requirements.
  * Supports HTML and Markdown format validation with specific tag/syntax checking.
- * 
+ *
  * @param text - Message text content to validate (max 4000 characters)
  * @param format - Optional text format ('html', 'markdown', or undefined for plain text)
  * @returns The validated text content (unchanged if valid)
@@ -394,10 +405,10 @@ export function validateAndFormatText(text: string, format?: string): string {
 
 /**
  * Add additional fields to the request body
- * 
+ *
  * Processes additional optional fields from node parameters and adds them to the request body.
  * Supports fields like disable_link_preview and notify for message customization.
- * 
+ *
  * @param this - The execution context providing access to node parameters
  * @param body - The request body object to modify
  * @param index - The current item index for parameter retrieval
@@ -421,10 +432,10 @@ export function addAdditionalFields(
 
 /**
  * Categorize Max API errors based on error codes and messages
- * 
+ *
  * Analyzes error responses from the Max API and categorizes them into specific types
  * to enable appropriate error handling and user guidance.
- * 
+ *
  * @param error - The error object from Max API containing error codes and messages
  * @returns The categorized error type for appropriate handling
  */
@@ -483,10 +494,10 @@ export function categorizeMaxError(error: IMaxError): MaxErrorCategory {
 
 /**
  * Create user-friendly error messages with troubleshooting guidance
- * 
+ *
  * Generates human-readable error messages with specific troubleshooting guidance
  * based on the error category and Max API response details.
- * 
+ *
  * @param error - The error object from Max API containing error details
  * @param category - The categorized error type for appropriate messaging
  * @returns A user-friendly error message with troubleshooting guidance
@@ -525,10 +536,10 @@ export function createUserFriendlyErrorMessage(error: IMaxError, category: MaxEr
 
 /**
  * Enhanced error handling with retry logic and user-friendly messages
- * 
+ *
  * Provides comprehensive error handling for Max API requests with categorization,
  * user-friendly messages, and retry logic for transient failures.
- * 
+ *
  * @param this - The execution context providing access to node information
  * @param error - The error object from the Max API request
  * @param operation - Description of the operation that failed
@@ -602,10 +613,10 @@ export async function handleMaxApiError(
 
 /**
  * Validate input parameters with comprehensive checks
- * 
+ *
  * Performs comprehensive validation of message parameters including recipient ID,
  * text content, and format-specific syntax validation.
- * 
+ *
  * @param recipientType - Type of recipient ('user' or 'chat')
  * @param recipientId - Numeric ID of the recipient user or chat
  * @param text - Message text content to validate
@@ -665,7 +676,7 @@ export function validateInputParameters(
 
 /**
  * Max Attachment Interface
- * 
+ *
  * Represents a file attachment or interactive element that can be included in Max messages.
  * Supports various attachment types including media files and inline keyboards.
  */
@@ -681,7 +692,7 @@ export interface IMaxAttachment {
 
 /**
  * Max Keyboard Button Interface
- * 
+ *
  * Represents a single button in an inline keyboard with its properties and behavior.
  * Supports different button types including callbacks, links, and contact/location requests.
  */
@@ -695,7 +706,7 @@ export interface IMaxKeyboardButton {
 
 /**
  * Max Keyboard Interface
- * 
+ *
  * Represents an inline keyboard structure with multiple rows of buttons.
  * Used for creating interactive message interfaces in Max messenger.
  */
@@ -708,7 +719,7 @@ export interface IMaxKeyboard {
 
 /**
  * Max Upload Response Interface
- * 
+ *
  * Represents the response from Max API file upload operations,
  * containing the upload URL and file token for attachment usage.
  */
@@ -719,7 +730,7 @@ export interface IMaxUploadResponse {
 
 /**
  * Attachment Configuration Interface
- * 
+ *
  * Defines the configuration for file attachments including type, input method,
  * and source information for uploading files to Max messenger.
  */
@@ -753,10 +764,10 @@ const SUPPORTED_EXTENSIONS = {
 
 /**
  * Validate attachment configuration and file properties
- * 
+ *
  * Validates attachment configuration including type, input method, file size,
  * and file extension against Max messenger constraints and supported formats.
- * 
+ *
  * @param config - Attachment configuration object with type and input details
  * @param fileSize - Optional file size in bytes for validation
  * @param fileName - Optional file name for extension validation
@@ -821,10 +832,10 @@ export function validateAttachment(
 
 /**
  * Download file from URL to temporary location
- * 
+ *
  * Downloads a file from a remote URL to a temporary local file for processing.
  * Handles file naming and validates the download response.
- * 
+ *
  * @param this - The execution context providing access to HTTP helpers
  * @param url - The URL of the file to download
  * @param fileName - Optional custom file name (auto-generated if not provided)
@@ -880,12 +891,12 @@ export async function downloadFileFromUrl(
 
 /**
  * Upload file to Max API and get token
- * 
+ *
  * Uploads a file to the Max API using the two-step upload process:
  * 1. Get upload URL from Max API
  * 2. Upload file to the provided URL
  * 3. Receive file token for use in messages
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param filePath - Local file path of the file to upload
@@ -969,10 +980,10 @@ export async function uploadFileToMax(
 
 /**
  * Process binary data and upload to Max API
- * 
+ *
  * Processes binary data from n8n workflow and uploads it to Max API for use as attachment.
  * Validates file properties and handles the complete upload workflow.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param config - Attachment configuration specifying type and binary property
@@ -1022,10 +1033,10 @@ export async function processBinaryAttachment(
 
 /**
  * Process URL-based attachment and upload to Max API
- * 
+ *
  * Downloads a file from a URL and uploads it to Max API for use as attachment.
  * Handles temporary file management and cleanup after upload.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param config - Attachment configuration specifying type and URL
@@ -1070,10 +1081,10 @@ export async function processUrlAttachment(
 
 /**
  * Handle multiple attachments for a message
- * 
+ *
  * Processes multiple file attachments for a Max message, handling both binary data
  * and URL-based attachments with validation and upload to Max API.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param attachmentConfigs - Array of attachment configurations to process
@@ -1125,7 +1136,7 @@ const KEYBOARD_LIMITS = {
 
 /**
  * Button Configuration Interface
- * 
+ *
  * Defines the configuration for individual buttons in inline keyboards,
  * including text, type, and type-specific properties like callbacks and URLs.
  */
@@ -1139,10 +1150,10 @@ export interface IButtonConfig {
 
 /**
  * Validate a single keyboard button
- * 
+ *
  * Validates the configuration of an individual keyboard button including text,
  * type, and type-specific properties against Max messenger constraints.
- * 
+ *
  * @param button - Button configuration object to validate
  * @throws {Error} When button configuration is invalid or exceeds limits
  */
@@ -1200,10 +1211,10 @@ export function validateKeyboardButton(button: IButtonConfig): void {
 
 /**
  * Get chat information using Max Bot API with enhanced error handling
- * 
+ *
  * Retrieves detailed information about a specific chat including metadata,
  * member count, and chat settings from the Max messenger API.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param chatId - Numeric ID of the chat to retrieve information for
@@ -1245,10 +1256,10 @@ export async function getChatInfo(
 
 /**
  * Leave chat using Max Bot API with enhanced error handling
- * 
+ *
  * Removes the bot from a specific chat or group in Max messenger.
  * Only works for group chats where the bot has appropriate permissions.
- * 
+ *
  * @param this - The execution context providing access to credentials and helpers
  * @param bot - Configured Max Bot API instance
  * @param chatId - Numeric ID of the chat to leave
@@ -1270,10 +1281,13 @@ export async function leaveChat(
 		const credentials = await this.getCredentials('maxApi');
 		const baseUrl = credentials['baseUrl'] || 'https://botapi.max.ru';
 
-		// Make HTTP request to leave chat endpoint
+		// platform-api: DELETE /chats/{chatId}/members/me; legacy: POST /chats/{chatId}/leave
+		const isPlatform = isPlatformApi(String(baseUrl || ''));
 		const result = await this.helpers.httpRequest({
-			method: 'POST',
-			url: `${baseUrl}/chats/${chatId}/leave`,
+			method: isPlatform ? 'DELETE' : 'POST',
+			url: isPlatform
+				? `${baseUrl}/chats/${chatId}/members/me`
+				: `${baseUrl}/chats/${chatId}/leave`,
 			headers: {
 				'Authorization': `Bearer ${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
@@ -1290,10 +1304,10 @@ export async function leaveChat(
 
 /**
  * Validate keyboard layout and enforce Max API limits
- * 
+ *
  * Validates the overall structure of an inline keyboard including row count,
  * button count per row, and total button limits according to Max API constraints.
- * 
+ *
  * @param buttons - Two-dimensional array of button configurations representing keyboard layout
  * @throws {Error} When keyboard layout exceeds Max API limits or is invalid
  */
@@ -1347,10 +1361,10 @@ export function validateKeyboardLayout(buttons: IButtonConfig[][]): void {
 
 /**
  * Format keyboard buttons for Max API inline_keyboard structure
- * 
+ *
  * Converts a two-dimensional array of button configurations into the proper
  * Max API inline keyboard format with validation and structure formatting.
- * 
+ *
  * @param buttons - Two-dimensional array of button configurations representing keyboard layout
  * @returns Formatted Max keyboard object ready for API submission
  * @throws {Error} When keyboard layout validation fails
@@ -1395,10 +1409,10 @@ export function formatInlineKeyboard(buttons: IButtonConfig[][]): IMaxKeyboard {
 
 /**
  * Create inline keyboard attachment from button configuration
- * 
+ *
  * Creates a Max attachment object containing an inline keyboard from button configurations.
  * Validates and formats the keyboard structure for use in messages.
- * 
+ *
  * @param buttons - Two-dimensional array of button configurations representing keyboard layout
  * @returns Max attachment object containing the formatted inline keyboard
  * @throws {Error} When keyboard layout validation fails
@@ -1414,10 +1428,10 @@ export function createInlineKeyboardAttachment(buttons: IButtonConfig[][]): IMax
 
 /**
  * Process keyboard configuration from n8n parameters
- * 
+ *
  * Extracts and processes inline keyboard configuration from n8n node parameters,
  * converting the UI structure into Max API compatible button arrays.
- * 
+ *
  * @param this - The execution context providing access to node parameters
  * @param index - The current item index for parameter retrieval
  * @returns Max attachment object containing the inline keyboard or null if no keyboard configured
@@ -1465,10 +1479,10 @@ export function processKeyboardFromParameters(
 
 /**
  * Process inline keyboard from additional fields data
- * 
+ *
  * Converts inline keyboard configuration from additional fields format to Max attachment format.
  * This function is used when keyboard data comes from additionalFields instead of direct parameters.
- * 
+ *
  * @param keyboardData - Keyboard configuration data from additionalFields
  * @returns Max attachment object containing the inline keyboard or null if no keyboard configured
  * @throws {Error} When keyboard configuration is invalid or processing fails

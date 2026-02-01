@@ -2,10 +2,10 @@ import type { Icon, ICredentialTestRequest, ICredentialType, INodeProperties } f
 
 /**
  * Max messenger API credentials configuration for n8n
- * 
+ *
  * This class defines the credential type for Max messenger Bot API integration.
  * It provides secure storage for bot access tokens and API configuration.
- * 
+ *
  * @implements {ICredentialType}
  */
 export class MaxApi implements ICredentialType {
@@ -21,7 +21,7 @@ export class MaxApi implements ICredentialType {
     /** URL to the official Max messenger Bot API documentation */
     documentationUrl = 'https://dev.max.ru/docs/chatbots/bots-coding/library/js';
 
-    /** 
+    /**
      * Configuration properties for Max messenger API credentials
      * Defines the input fields shown to users when configuring credentials
      */
@@ -40,20 +40,21 @@ export class MaxApi implements ICredentialType {
             name: 'baseUrl',
             type: 'string',
             default: 'https://botapi.max.ru',
-            description: 'Base URL for Max messenger Bot API',
+            description: 'Use https://platform-api.max.ru for the current MAX API (recommended), or https://botapi.max.ru for legacy',
         },
     ];
 
-    /** 
+    /**
      * Credential test configuration to validate the provided credentials
-     * Makes a request to the Max API /me endpoint to verify token validity
+     * Makes a request to the Max API /me endpoint to verify token validity.
+     * platform-api.max.ru requires Authorization header (query param not supported).
      */
     test: ICredentialTestRequest = {
         request: {
             baseURL: '={{$credentials.baseUrl}}',
             url: '/me',
-            qs: {
-                access_token: '={{$credentials.accessToken}}',
+            headers: {
+                Authorization: '=Bearer {{$credentials.accessToken}}',
             },
         },
     };
