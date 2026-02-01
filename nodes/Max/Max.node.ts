@@ -4,8 +4,9 @@ import type {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeConnectionType,
 } from 'n8n-workflow';
-import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 
 import { createMaxBotInstance, sendMessage, editMessage, deleteMessage, answerCallbackQuery, getChatInfo, leaveChat, validateAndFormatText, addAdditionalFields, handleAttachments, processKeyboardFromParameters, processKeyboardFromAdditionalFields } from './GenericFunctions';
 
@@ -38,8 +39,8 @@ export class Max implements INodeType {
 		defaults: {
 			name: 'Max',
 		},
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: ['main' as NodeConnectionType],
+		outputs: ['main' as NodeConnectionType],
 		credentials: [
 			{
 				name: 'maxApi',

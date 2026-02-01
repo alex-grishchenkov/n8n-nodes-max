@@ -4,9 +4,8 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 	IWebhookResponseData,
+	NodeConnectionType,
 } from 'n8n-workflow';
-import { NodeConnectionType } from 'n8n-workflow';
-
 import { MaxWebhookManager } from './MaxWebhookManager';
 import { MaxEventProcessor } from './MaxEventProcessor';
 import { MAX_TRIGGER_PROPERTIES } from './MaxTriggerConfig';
@@ -39,7 +38,7 @@ export class MaxTrigger implements INodeType {
 			name: 'Max Trigger',
 		},
 		inputs: [],
-		outputs: [NodeConnectionType.Main],
+		outputs: ['main' as NodeConnectionType],
 		credentials: [
 			{
 				name: 'maxApi',
