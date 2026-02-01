@@ -45,14 +45,14 @@ export class MaxApi implements ICredentialType {
     ];
 
     /**
-     * Credential test: GET /me with Authorization header (platform-api.max.ru only).
+     * Credential test: GET /me with Authorization header (token only, no "Bearer " prefix per platform-api.max.ru).
      */
     test: ICredentialTestRequest = {
         request: {
             baseURL: '={{$credentials.baseUrl}}',
             url: '/me',
             headers: {
-                Authorization: '=Bearer {{$credentials.accessToken}}',
+                Authorization: '={{$credentials.accessToken}}',
             },
         },
     };

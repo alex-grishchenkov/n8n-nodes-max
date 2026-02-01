@@ -200,7 +200,7 @@ export async function editMessage(
 			method: 'PUT',
 			url: `${baseUrl}/messages/${messageId}`,
 			headers: {
-				'Authorization': `Bearer ${credentials['accessToken']}`,
+				'Authorization': `${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(requestBody),
@@ -247,7 +247,7 @@ export async function deleteMessage(
 			method: 'DELETE',
 			url: `${baseUrl}/messages/${messageId}`,
 			headers: {
-				'Authorization': `Bearer ${credentials['accessToken']}`,
+				'Authorization': `${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
 			},
 			json: true,
@@ -326,7 +326,7 @@ export async function answerCallbackQuery(
 			method: 'POST',
 			url: `${baseUrl}/answers`,
 			headers: {
-				'Authorization': `Bearer ${credentials['accessToken']}`,
+				'Authorization': `${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(requestBody),
@@ -910,7 +910,7 @@ export async function uploadFileToMax(
 			method: 'POST',
 			url: `${baseUrl}/uploads`,
 			headers: {
-				'Authorization': `Bearer ${credentials['accessToken']}`,
+				'Authorization': `${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
@@ -1229,7 +1229,7 @@ export async function getChatInfo(
 			method: 'GET',
 			url: `${baseUrl}/chats/${chatId}`,
 			headers: {
-				'Authorization': `Bearer ${credentials['accessToken']}`,
+				'Authorization': `${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
 			},
 			json: true,
@@ -1273,7 +1273,7 @@ export async function leaveChat(
 			method: 'DELETE',
 			url: `${baseUrl}/chats/${chatId}/members/me`,
 			headers: {
-				'Authorization': `Bearer ${credentials['accessToken']}`,
+				'Authorization': `${credentials['accessToken']}`,
 				'Content-Type': 'application/json',
 			},
 			json: true,

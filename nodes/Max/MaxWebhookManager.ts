@@ -168,7 +168,7 @@ export class MaxWebhookManager {
 		return context.helpers.httpRequest({
 			method: 'GET',
 			url: `${baseUrl}/subscriptions`,
-			headers: { Authorization: `Bearer ${token}` },
+			headers: { Authorization: `${token}` },
 			json: true,
 		});
 	}
@@ -192,7 +192,7 @@ export class MaxWebhookManager {
 		await context.helpers.httpRequest({
 			method: 'POST',
 			url: `${baseUrl}/subscriptions`,
-			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+			headers: { 'Content-Type': 'application/json', Authorization: `${token}` },
 			body: JSON.stringify(body),
 			json: true,
 		});
@@ -212,7 +212,7 @@ export class MaxWebhookManager {
 		await context.helpers.httpRequest({
 			method: 'DELETE',
 			url: `${baseUrl}/subscriptions`,
-			headers: { Authorization: `Bearer ${token}` },
+			headers: { Authorization: `${token}` },
 			qs: { url: webhookUrl },
 			json: true,
 		});
