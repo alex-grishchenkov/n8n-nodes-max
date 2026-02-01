@@ -139,12 +139,17 @@ export class MaxWebhookManager {
 	}
 
 	/**
-	 * Get webhook configuration from node context
+	 * Get webhook configuration from node context.
+	 * Use production URL (/webhook/) for MAX — n8n may return test URL (/webhook-test/) but
+	 * when workflow is active, MAX must send to production path.
 	 */
 	public async getWebhookConfig(context: IHookFunctions) {
 		const credentials = await context.getCredentials('maxApi');
 		const baseUrl = (credentials['baseUrl'] as string) || this.DEFAULT_BASE_URL;
-		const webhookUrl = context.getNodeWebhookUrl('default') as string;
+		let webhookUrl = context.getNodeWebhookUrl('default') as string;
+		if (webhookUrl.includes('/webhook-test/')) {
+			webhookUrl = webhookUrl.replace('/webhook-test/', '/webhook/');
+		}
 		const events = context.getNodeParameter('events') as MaxTriggerEvent[];
 
 		return {
